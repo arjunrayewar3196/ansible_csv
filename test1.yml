@@ -1,0 +1,49 @@
+---
+- name: Generate an HTML report from jinja template
+  hosts: localhost
+  gather_facts: true
+  vars:
+    #email settings
+    # email_subject: Patching Report
+    # email_host: 3.12.71.145
+    # email_from: arjunrayewar0305@gmail.com
+    # email_to: arjunrayewar0305@gmail.com
+
+    #random settings
+    csv_path: /home/ec2-user/Ansible-test/
+    csv_filename: repor3.csv
+    headers: username,Password,user_ID,group_id,user_info,home_directory,shell
+
+  tasks:
+  - name: Gather last reboot
+    ansible.builtin.shell: cat /etc/passwd #| grep -m1 "" | awk '{ print $1, $6, $7, $8 }'
+    register: rebooted
+
+  - name: debug
+    set_fact:
+      user_data: "{{ rebooted.stdout_lines }}"
+
+  - name: 'msg'
+    debug:
+      var: user_data
+
+  - name: debug the msg
+    ansible.builtin.lineinfile:
+      dest: /home/ec2-user/Ansible-test/userdata.csv
+      line: "{{ headers }}"
+      create: true
+      state: present
+
+  - name: Build out CSV file
+    ansible.builtin.lineinfile:
+      dest: /home/ec2-user/Ansible-test/userdata.csv
+      # line: "{{ inventory_hostname }},{{ ansible_distribution_version }},{{ ansible_kernel }},{{ rebooted.stdout }}"
+      line: "{{ item.split( ':' ) | replace('[','') | replace(']','') | replace(\"'\", '') }}"
+      create: true
+      state: present
+    loop: "{{ user_data }}"
+    delegate_to: localhost
+
+
+
+ 
